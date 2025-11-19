@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Upload Reel - PlayReel India</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <div class="max-w-xl mx-auto p-6 pt-20">
+
+    <h1 class="text-2xl font-bold text-center mb-8 text-indigo-600">Create New Reel</h1>
+
+    <!-- Video Preview -->
+    <video id="preview" controls class="w-full rounded-xl bg-black hidden"></video>
+
+    <!-- Upload Area -->
+    <label class="block">
+      <div class="border-4 border-dashed border-indigo-300 rounded-xl p-16 text-center cursor-pointer hover:border-indigo-500 transition">
+        <p class="text-xl text-gray-600">Click or drop video here</p>
+        <p class="text-sm text-gray-500 mt-2">(Max 60 seconds, vertical)</p>
+      </div>
+      <input type="file" id="video-input" accept="video/*" class="hidden" onchange="handleFile(this.files[0])">
+    </label>
+
+    <!-- Caption -->
+    <textarea id="caption" placeholder="Write a caption..." 
+              class="w-full p-4 mt-6 border rounded-xl resize-none"></textarea>
+
+    <!-- Post Button -->
+    <button onclick="uploadReel()" id="post-btn" 
+            class="w-full mt-6 bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-xl font-bold text-lg disabled:opacity-50"
+            disabled>Post Reel</button>
+
+    <button onclick="history.back()" class="w-full mt-3 text-gray-600 py-3">Cancel</button>
+  </div>
+
+  <script>
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const token = localStorage.getItem('token');
+    let selectedFile = null;
+
+    function handleFile(file) {
+      if (!file || !file.type.startsWith('video/')) {
+        alert("Please select a video file");
+        return;
+      }
+
+      selectedFile = file;
+      const preview = document.getElementById('preview');
+      preview.src = URL.createObjectURL(file);
+      preview.classList.remove('hidden');
+      document.getElementById('post-btn').disabled = false;
+    }
+
+    async function uploadReel() {
+      if (!selectedFile) return;
+
+      const caption = document.getElementById('caption').value;
+      const btn = document.getElementById('post-btn');
+      btn.disabled = true;
+      btn.textContent = "Uploading...";
+
+      const formData = new FormData();
+      formData.append('video', selectedFile);
+      formData.append('caption', caption);
+
+      try {
+       const res = await fetch('/api/upload', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: formData
+        });
+
+        const result = await res.json();
+        if (result.success) {
+          alert("Reel posted successfully!");
+          location.href = "dashboard.html";
+        } else {
+          alert("Upload failed: " + result.message);
+        }
+      } catch (err) {
+        alert("Upload error. Try again.");
+      } finally {
+        btn.textContent = "Post Reel";
+        btn.disabled = false;
+      }
+    }
+
+    // Allow drag & drop
+    ['dragover', 'dragenter'].forEach(evt => {
+      document.body.addEventListener(evt, e => e.preventDefault());
+    });
+    document.body.addEventListener('drop', e => {
+      e.preventDefault();
+      if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+    });
+  </script>
+</body>
+</html>

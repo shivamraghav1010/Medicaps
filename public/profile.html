@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Profile - PlayReel India</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .grid-posts { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; }
+    @media (max-width: 640px) { .grid-posts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 min-h-screen">
+
+  <!-- Top Bar with Hamburger Menu -->
+  <div class="bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 sticky top-0 z-50 shadow-sm">
+    <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between relative">
+      <div class="flex items-center gap-4">
+        <button onclick="history.back()" class="text-2xl font-bold text-gray-800 dark:text-white">Back</button>
+        <div class="flex items-center gap-3">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" class="text-gray-800 dark:text-white">
+            <path d="M12 2.04c-5.5 0-9.96 4.46-9.96 9.96s4.46 9.96 9.96 9.96 9.96-4.46 9.96-9.96-4.46-9.96-9.96-9.96zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/>
+            <path d="M17.5 6.5h-11c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2v-11c0-1.1-.9-2-2-2z"/>
+            <circle cx="12" cy="12" r="3.25"/>
+          </svg>
+          <span class="text-2xl font-bold text-gray-800 dark:text-white">Instagram</span>
+        </div>
+      </div>
+
+      <!-- Hamburger Icon -->
+      <button id="hamburger-btn" class="w-8 h-8 flex flex-col justify-center items-center gap-1">
+        <span class="block w-6 h-0.5 bg-gray-800 dark:bg-white"></span>
+        <span class="block w-6 h-0.5 bg-gray-800 dark:bg-white"></span>
+        <span class="block w-6 h-0.5 bg-gray-800 dark:bg-white"></span>
+      </button>
+
+      <!-- Dropdown -->
+      <div id="dropdown-menu" class="absolute right-4 top-16 bg-gray-100 dark:bg-gray-800 shadow-xl rounded-xl border border-gray-300 dark:border-gray-700 w-48 hidden z-50">
+        <div class="p-3">
+          <button onclick="logout()" class="w-full text-left text-red-600 font-medium py-3 px-4 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg">
+            Logout
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Profile Content -->
+  <div class="max-w-4xl mx-auto p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-t-3xl shadow-lg -mt-4 pt-8 px-8">
+      <div class="flex flex-col md:flex-row items-center md:items-start gap-8">
+
+        <!-- Profile Photo -->
+        <div class="relative">
+          <label for="photo-upload" class="cursor-pointer">
+            <img id="profile-photo" src="https://i.imgur.com/0a4pL8I.jpeg" 
+                 class="w-36 h-36 rounded-full object-cover border-4 border-gray-300 dark:border-gray-700 shadow-xl">
+            <div class="absolute inset-0 rounded-full bg-black bg-opacity-40 opacity-0 hover:opacity-100 transition flex items-center justify-center">
+              <span class="text-white font-bold text-lg">Change</span>
+            </div>
+          </label>
+          <input type="file" id="photo-upload" accept="image/*" class="hidden" onchange="uploadProfilePhoto(this.files[0])">
+        </div>
+
+        <div class="flex-1 text-center md:text-left">
+          <div class="flex items-center justify-between mb-4">
+            <h1 id="profile-name" class="text-3xl font-bold dark:text-white">Loading...</h1>
+            <div id="action-buttons"></div>
+          </div>
+          <div class="flex gap-10 justify-center md:justify-start my-6 text-lg font-semibold">
+            <div><span id="post-count">0</span> posts</div>
+            <div><span id="follower-count">0</span> followers</div>
+            <div><span id="following-count">0</span> following</div>
+          </div>
+          <p class="font-bold dark:text-white" id="display-sport-age">Sport • Age</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 mt-8">
+      <div id="my-posts" class="grid grid-posts bg-gray-300 dark:bg-gray-700"></div>
+      <p id="no-posts" class="text-center py-20 text-gray-500 hidden">No reels yet!</p>
+    </div>
+  </div>
+
+  <!-- Fullscreen Modal -->
+  <div id="video-modal" class="fixed inset-0 bg-black z-50 hidden flex items-center justify-center" onclick="this.classList.add('hidden')">
+    <video id="fullscreen-video" controls autoplay loop class="max-w-full max-h-full"></video>
+  </div>
+
+  <script>
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const token = localStorage.getItem('token');
+    const urlParams = new URLSearchParams(window.location.search);
+    const viewedUserEmail = urlParams.get('user') || currentUser.email;
+
+    // TOGGLE MENU
+    document.getElementById('hamburger-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      document.getElementById('dropdown-menu').classList.toggle('hidden');
+    });
+    document.addEventListener('click', () => {
+      document.getElementById('dropdown-menu').classList.add('hidden');
+    });
+
+    // LOGOUT
+    function logout() {
+      localStorage.clear();
+      alert("Logged out!");
+      location.href = "index.html";
+    }
+
+    // THIS WAS MISSING — PROFILE PHOTO UPLOAD FUNCTION
+    async function uploadProfilePhoto(file) {
+      if (!file || viewedUserEmail !== currentUser.email) return;
+
+      const formData = new FormData();
+      formData.append('photo', file);
+
+      try {
+        const res = await fetch('/api/upload-profile-photo', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: formData
+        });
+        const result = await res.json();
+
+        if (result.success) {
+          const url = result.photoUrl;
+          document.getElementById('profile-photo').src = url;
+          currentUser.photo = url;
+          localStorage.setItem('user', JSON.stringify(currentUser));
+          alert("Profile photo updated!");
+        } else {
+          alert("Upload failed: " + result.message);
+        }
+      } catch (err) {
+        alert("Error uploading photo");
+      }
+    }
+
+    // Load Profile
+    async function loadProfile() {
+      try {
+        const res = await fetch(`/api/profile/${viewedUserEmail}`);
+        const data = await res.json();
+        if (!data.success) { location.href = "dashboard.html"; return; }
+
+        document.getElementById('profile-name').textContent = data.user.name;
+        document.getElementById('display-sport-age').textContent = `${data.user.sport || 'Athlete'} • Age ${data.user.age || '??'}`;
+        document.getElementById('post-count').textContent = data.videos?.length || 0;
+        document.getElementById('follower-count').textContent = data.user.followers?.length || 0;
+
+        if (data.user.photo) {
+          document.getElementById('profile-photo').src = data.user.photo;
+          if (currentUser.email === viewedUserEmail) {
+            currentUser.photo = data.user.photo;
+            localStorage.setItem('user', JSON.stringify(currentUser));
+          }
+        }
+
+        const container = document.getElementById('my-posts');
+        if (data.videos?.length > 0) {
+          container.innerHTML = data.videos.map(v => `
+            <div class="relative aspect-square bg-black cursor-pointer overflow-hidden group" onclick="openVideo('${v.url}')">
+              <video src="${v.url}" loop muted playsinline class="w-full h-full object-cover group-hover:scale-110 transition"></video>
+              <div class="absolute bottom-2 right-2 bg-black bg-opacity-60 text-white px-2 py-1 rounded text-xs">
+                Heart ${v.likes?.length || 0}
+              </div>
+            </div>
+          `).join('');
+        } else {
+          document.getElementById('no-posts').classList.remove('hidden');
+        }
+
+        const actionDiv = document.getElementById('action-buttons');
+        if (viewedUserEmail === currentUser.email) {
+          actionDiv.innerHTML = `<button class="px-6 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg font-medium">Edit Profile</button>`;
+        } else {
+          const isFollowing = data.user.followers?.includes(currentUser.email);
+          actionDiv.innerHTML = `<button onclick="toggleFollow()" class="px-8 py-3 rounded-lg font-bold text-white ${isFollowing ? 'bg-gray-500' : 'bg-indigo-600'}">
+            ${isFollowing ? 'Following' : 'Follow'}
+          </button>`;
+        }
+      } catch (err) { console.error(err); }
+    }
+
+    function openVideo(url) {
+      document.getElementById('fullscreen-video').src = url;
+      document.getElementById('video-modal').classList.remove('hidden');
+    }
+
+    loadProfile();
+  </script>
+</body>
+</html>
