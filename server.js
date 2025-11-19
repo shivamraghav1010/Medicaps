@@ -121,7 +121,9 @@ const mongoose = require('mongoose');
 const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
 const nodemailer = require('nodemailer');
-const bcrypt = require('bcrypt');
+// const bcrypt = require('bcrypt');
+const bcrypt = require("bcryptjs");
+
 const jwt = require('jsonwebtoken');
 const fs = require('fs');
 const path = require('path');
